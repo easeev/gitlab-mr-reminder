@@ -75,17 +75,17 @@ def run
 end
 
 def group_mrs(client)
-  client
-    .get("/groups/#{url_encode($GITLAB_GROUP_ID)}/merge_requests", query: { state: 'opened', order_by: 'created_at' })
-    .map(&:to_hash)
-    .reject { |mr| mr['work_in_progress'] }
-    .group_by { |mr| mr['project_id'] }
+  client.
+    get("/groups/#{url_encode($GITLAB_GROUP_ID)}/merge_requests", query: { state: 'opened', order_by: 'created_at', per_page: 100 }).
+    map(&:to_hash).
+    reject { |mr| mr['work_in_progress'] }.
+    group_by { |mr| mr['project_id'] }
 end
 
 def group_projects(client)
-  client
-    .group_projects($GITLAB_GROUP_ID)
-    .map(&:to_hash)
+  client.
+    group_projects($GITLAB_GROUP_ID, per_page: 100).
+    map(&:to_hash)
 end
 
 def project_name(project)
