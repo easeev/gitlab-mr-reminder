@@ -50,8 +50,6 @@ if $GITLAB_ENDPOINT.nil? or $GITLAB_PRIVATE_TOKEN.nil? or $GITLAB_GROUP_ID.nil? 
   exit 0
 end
 
-$ANIMALS = ['🙈 See-No-Evil Monkey', '🙉 Hear-No-Evil Monkey', '🙊 Speak-No-Evil Monkey', '🐵 Monkey', '🐒 Monkey', '🦍 Gorilla', '🐶 Dog', '🐕 Dog', '🐩 Poodle', '🐺 Wolf', '🦊 Fox', '🦝 Raccoon', '🐱 Cat', '🐈 Cat', '🦁 Lion', '🐯 Tiger', '🐅 Tiger', '🐆 Leopard', '🐴 Horse', '🐎 Horse', '🦄 Unicorn', '🦓 Zebra', '🐮 Cow', '🐂 Ox', '🐃 Water Buffalo', '🐄 Cow', '🐷 Pig', '🐖 Pig', '🐗 Boar', '🐏 Ram', '🐑 Ewe', '🐐 Goat', '🐪 Camel', '🐫 Camel', '🦙 Llama', '🦒 Giraffe', '🐘 Elephant', '🦏 Rhinoceros', '🦛 Hippopotamus', '🐭 Mouse', '🐁 Mouse', '🐀 Rat', '🐹 Hamster', '🐰 Rabbit', '🐇 Rabbit', '🐿 Chipmunk', '🦔 Hedgehog', '🦇 Bat', '🐻 Bear', '🐨 Koala', '🐼 Panda', '🦘 Kangaroo', '🦡 Badger', '🦃 Turkey', '🐔 Chicken', '🐓 Rooster', '🐣 Chick', '🐤 Baby Chick', '🐥 Baby Chick', '🐦 Bird', '🐧 Penguin', '🕊 Dove', '🦅 Eagle', '🦆 Duck', '🦢 Swan', '🦉 Owl', '🦚 Peacock', '🦜 Parrot', '🐸 Frog', '🐊 Crocodile', '🐢 Turtle', '🦎 Lizard', '🐍 Snake', '🐲 Dragon', '🐉 Dragon', '🦕 Sauropod', '🦖 T-Rex', '🐳 Spouting Whale', '🐋 Whale', '🐬 Dolphin', '🐟 Fish', '🐠 Tropical Fish', '🐡 Blowfish', '🦈 Shark', '🐙 Octopus', '🐚 Spiral Shell', '🦀 Crab', '🦞 Lobster', '🦐 Shrimp', '🦑 Squid', '🐌 Snail', '🦋 Butterfly', '🐛 Bug', '🐜 Ant', '🐝 Honeybee', '🐞 Lady Beetle', '🦗 Cricket', '🕷 Spider', '🦂 Scorpion', '🦟 Mosquito', '🦠 Microbe']
-
 def run
   client = Gitlab.client(endpoint: $GITLAB_ENDPOINT, private_token: $GITLAB_PRIVATE_TOKEN)
   mrs = group_mrs(client)
@@ -59,19 +57,15 @@ def run
 
   messages_per_project = mrs.map { |project_id, project_mrs|
     project = projects.find { |p| p['id'] == project_id }
-    "• *#{project_name(project)}*:\n" + project_mrs.map { |mr|
-      "    #{mr_age(mr)} <#{mr['web_url']}|#{mr['title']}> " + mr_status(mr)
+    "*#{project_name(project)}*\n" + project_mrs.map { |mr|
+      "    _#{mr_age(mr)} old_ · <#{mr['web_url']}|#{mr['title']}> " + mr_status(mr)
     }.join("\n")
   }
 
   br = "\n\n"
-  message_start = "*Good Morning! ☕️😊 *"
-  mrs_message = "Seems like there're some Merge Requests waiting for the review. Now is the best time to do it! 😉"
-  alt_message = "Seems like we don't have any Merge Requests waiting for the review! Good job! 💪😎"
-  message_end = "\n*#{$ANIMALS.sample} wishes you a great day! 🤙 *"
-  message_body = unless messages_per_project.empty? then mrs_message + br + messages_per_project.join(br) else alt_message end
-
-  slack([message_start, message_body, message_end].join(br))
+  unless messages_per_project.empty?
+    slack(messages_per_project.join(br))
+  end
 end
 
 def group_mrs(client)
@@ -90,23 +84,26 @@ end
 
 def project_name(project)
   if project
-    project['name'].upcase
-  else 
-    'unknown project 🤷‍♂️' 
+    project['name']
+  else
+    'unknown project'
   end
 end
 
 def mr_age(mr)
-  age = DateTime.now.mjd - Date.parse(mr['created_at']).mjd
-  case age - 1
-  when 0
-    '🐣'
-  when 1..3
-    ['🥺', '🙏', '🙋‍♂️', '🙋', '👀', '🤗', '👋', '✌️'].sample
-  when 3..10
-    ['🧟‍♂️', '🧟‍♀️'].sample
+  hrs = ((Time.parse(DateTime.now.to_s) - Time.parse(mr['created_at'])) / 3600).round
+
+  if hrs < 2
+    "#{hrs} hr"
+  elsif hrs < 24
+    "#{hrs} hrs"
   else
-    '☠️'
+    days = (hrs / 24).round
+    if days > 1
+      "#{days} days"
+    else
+      "#{days} day"
+    end
   end
 end
 
@@ -134,7 +131,5 @@ def slack(message)
     puts "failed #{e}"
   end
 end
-
-# --------------- RUN --------------- #
 
 run
