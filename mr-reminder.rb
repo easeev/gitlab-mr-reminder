@@ -84,7 +84,7 @@ end
 
 def group_projects(client)
   client.
-    group_projects($GITLAB_GROUP_ID, per_page: 100).
+    group_projects($GITLAB_GROUP_ID, { include_subgroups: true, per_page: 100 }).
     map(&:to_hash)
 end
 
