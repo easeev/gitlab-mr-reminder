@@ -76,7 +76,7 @@ end
 
 def group_mrs(client)
   client.
-    get("/groups/#{url_encode($GITLAB_GROUP_ID)}/merge_requests", query: { state: 'opened', order_by: 'created_at', per_page: 100 }).
+    get("/groups/#{url_encode($GITLAB_GROUP_ID)}/merge_requests", query: { state: 'opened', order_by: 'created_at', sort: 'asc', per_page: 100 }).
     map(&:to_hash).
     reject { |mr| mr['work_in_progress'] }.
     group_by { |mr| mr['project_id'] }
